@@ -1,0 +1,101 @@
+:root {
+  color: #172033;
+  background: #f4f7fb;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-width: 320px; }
+
+button, input { font: inherit; }
+
+.app-shell {
+  width: 100%;
+  max-width: 720px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+.view { display: grid; gap: 16px; }
+.view[hidden] { display: none; }
+
+h1, h2, p { margin: 0; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.15rem; }
+
+.summary, .notice, .chapter-card, .data-card {
+  border: 1px solid #d7e0ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 16px;
+}
+
+.summary { display: grid; gap: 8px; }
+.summary-line { font-weight: 700; }
+.export-status { color: #a71930; }
+
+.actions, .chapter-actions { display: grid; gap: 8px; }
+
+button, .file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #1e4f8a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #fff;
+  background: #1e4f8a;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+
+button.secondary { color: #1e4f8a; background: #fff; }
+button:disabled { border-color: #b6bfcd; color: #687386; background: #e7ebf1; cursor: not-allowed; }
+button:focus-visible, .file-button:focus-within { outline: 3px solid #f1b840; outline-offset: 2px; }
+
+.file-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
+
+.chapter-list { display: grid; gap: 12px; }
+.chapter-card { display: grid; gap: 12px; }
+.chapter-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.chapter-title { font-weight: 700; line-height: 1.5; }
+.badge { flex: none; border-radius: 999px; padding: 4px 9px; background: #e7edf7; color: #1e4f8a; font-size: .875rem; font-weight: 700; }
+.badge.in-progress { background: #fff0c8; color: #785700; }
+.badge.completed { background: #dcefe3; color: #176237; }
+.chapter-metrics { color: #445066; }
+.help-text { line-height: 1.6; }
+.status-message { min-height: 1.5em; color: #176237; }
+.error-message { min-height: 1.5em; color: #a71930; font-weight: 700; }
+
+.practice-progress { color: #445066; font-weight: 700; }
+.text-link { width: fit-content; min-height: 48px; padding: 8px 0; border: 0; border-radius: 0; color: #1e4f8a; background: transparent; text-decoration: underline; }
+.question-card { display: grid; gap: 16px; padding-bottom: 72px; }
+.question-text { line-height: 1.7; font-weight: 700; }
+.choice-list { display: grid; gap: 8px; }
+.choice-button { justify-content: flex-start; color: #172033; background: #fff; text-align: left; line-height: 1.5; }
+.choice-button.selected { border-width: 3px; background: #e7edf7; }
+.choice-button.correct-choice { border-color: #176237; color: #113f25; background: #dcefe3; }
+.choice-button.incorrect-choice { border-color: #a71930; color: #781021; background: #f8dce1; }
+.result-label { font-size: 1.4rem; font-weight: 800; }
+.result-correct { color: #176237; }
+.result-incorrect { color: #a71930; }
+.explanation { border-left: 4px solid #1e4f8a; padding: 12px; background: #edf3fa; line-height: 1.7; }
+.practice-action { position: fixed; right: 0; bottom: 0; left: 0; z-index: 1; padding: 10px max(16px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-right)); background: #f4f7fb; }
+.practice-action button { display: flex; width: min(100%, 688px); margin: 0 auto; }
+.incorrect-list { display: grid; gap: 8px; }
+.incorrect-item { border: 1px solid #d7e0ee; border-radius: 8px; background: #fff; }
+.incorrect-item summary { min-height: 48px; padding: 12px 16px; cursor: pointer; line-height: 1.5; }
+.accordion-question, .accordion-explanation { padding: 0 16px 16px; line-height: 1.7; }
+.accordion-question { font-weight: 700; }
+.accordion-explanation { color: #445066; }
+
+@media (min-width: 560px) {
+  .actions { grid-template-columns: 1fr 1fr; }
+  .chapter-actions { grid-template-columns: 1fr 1fr; }
+}
