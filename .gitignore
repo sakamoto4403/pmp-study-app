@@ -1,0 +1,4 @@
+questions.json
+progress.json
+*.local.json
+.DS_Store
