@@ -26,6 +26,7 @@ const views = {
   practice: document.querySelector("#practice-view"),
   summary: document.querySelector("#summary-view"),
   review: document.querySelector("#review-view"),
+  textbook: document.querySelector("#textbook-view"),
   history: document.querySelector("#history-view"),
   data: document.querySelector("#data-view")
 };
@@ -121,6 +122,7 @@ function renderTop() {
     </div>
     <p id="weak-message" class="help-text" ${weakCount === 0 ? "" : "hidden"}>苦手問題はありません</p>
     <div id="storage-guidance"></div>
+    <div id="textbook-entry"></div>
     <div id="top-content"></div>`;
 
   top.querySelector("#open-data").addEventListener("click", () => setView("data"));
@@ -149,6 +151,21 @@ function renderTop() {
     content.querySelector("#top-question-file").addEventListener("change", handleQuestionFile);
     return;
   }
+
+  const textbookEntry = top.querySelector("#textbook-entry");
+  textbookEntry.className = "textbook-entry";
+  textbookEntry.innerHTML = `
+    <h2>教科書モードで読む</h2>
+    <p class="help-text">解答・解説を見ながら、問題を通しで読めます（採点なし）</p>
+    <div class="textbook-entry-list"></div>`;
+  const textbookList = textbookEntry.querySelector(".textbook-entry-list");
+  chapters.forEach((chapter) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = `第${chapter.chapterNumber}章 ${chapter.title}`;
+    button.addEventListener("click", () => openTextbook(chapter));
+    textbookList.append(button);
+  });
 
   const list = document.createElement("div");
   list.className = "chapter-list";
@@ -190,8 +207,75 @@ function createChapterCard(chapter) {
       startReview(getSortedChapterQuestions(chapter).filter((question) => state.progress.records[String(question.id)]?.lastResult === "incorrect"));
     }, true, !hasIncorrect);
   }
+  addButton("教科書で読む", () => openTextbook(chapter), true);
   addButton("履歴を見る", () => openHistory(chapter.chapterNumber), true);
   return card;
+}
+
+function openTextbook(chapter) {
+  state.session = { mode: "textbook", chapter };
+  setView("textbook");
+}
+
+function renderTextbook() {
+  const chapter = state.session.chapter;
+  const questions = getSortedChapterQuestions(chapter);
+  const chapterIndex = state.questions.chapters.findIndex((item) => item.chapterNumber === chapter.chapterNumber);
+  const nextChapter = state.questions.chapters[chapterIndex + 1];
+  const textbook = views.textbook;
+  textbook.innerHTML = `
+    <div class="textbook-header">
+      <h1>第${chapter.chapterNumber}章 ${chapter.title}</h1>
+      <button type="button" class="text-link" id="textbook-back">トップに戻る</button>
+    </div>
+    <nav class="textbook-toc" aria-label="問題目次"></nav>
+    <div class="textbook-list"></div>
+    <div class="textbook-footer">
+      <button type="button" class="secondary" id="textbook-bottom-back">トップに戻る</button>
+      ${nextChapter ? '<button type="button" id="textbook-next">次の章を読む</button>' : ""}
+    </div>`;
+  textbook.querySelector("#textbook-back").addEventListener("click", () => setView("top"));
+  textbook.querySelector("#textbook-bottom-back").addEventListener("click", () => setView("top"));
+  if (nextChapter) textbook.querySelector("#textbook-next").addEventListener("click", () => openTextbook(nextChapter));
+
+  const toc = textbook.querySelector(".textbook-toc");
+  const list = textbook.querySelector(".textbook-list");
+  questions.forEach((question) => {
+    const anchorId = `textbook-question-${question.id}`;
+    const link = document.createElement("a");
+    link.href = `#${anchorId}`;
+    link.textContent = question.id;
+    toc.append(link);
+
+    const article = document.createElement("article");
+    article.className = "textbook-question";
+    article.id = anchorId;
+    const number = document.createElement("p");
+    number.className = "textbook-question-number";
+    number.textContent = `問${question.id}`;
+    const text = document.createElement("p");
+    text.className = "question-text";
+    text.textContent = question.text;
+    const choices = document.createElement("div");
+    choices.className = "choice-list";
+    question.choices.forEach((choice) => {
+      const item = document.createElement("p");
+      item.className = "choice-button textbook-choice";
+      item.textContent = `${choice.key}　${choice.text}`;
+      if (choice.key === question.answer) item.classList.add("correct-choice");
+      choices.append(item);
+    });
+    const explanation = document.createElement("div");
+    explanation.className = "textbook-explanation";
+    const heading = document.createElement("strong");
+    heading.textContent = "解説";
+    const explanationText = document.createElement("p");
+    explanationText.textContent = question.explanation;
+    explanation.append(heading, explanationText);
+    const divider = document.createElement("hr");
+    article.append(number, text, choices, explanation, divider);
+    list.append(article);
+  });
 }
 
 function openHistory(chapterNumber = null) {
@@ -665,6 +749,7 @@ function refreshAfterProgressChange() {
   views.practice.innerHTML = "";
   views.summary.innerHTML = "";
   views.review.innerHTML = "";
+  views.textbook.innerHTML = "";
   views.history.innerHTML = "";
   Object.entries(views).forEach(([name, element]) => { element.hidden = name !== "top"; });
 }
@@ -724,6 +809,7 @@ function setView(viewName) {
   if (viewName === "top") renderTop();
   if (viewName === "practice") renderPractice();
   if (viewName === "summary") renderSummary();
+  if (viewName === "textbook") renderTextbook();
   if (viewName === "history") renderHistory();
   if (viewName === "data") renderData();
 }
