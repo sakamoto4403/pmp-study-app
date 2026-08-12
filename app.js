@@ -10,6 +10,11 @@ const state = {
   progress: null,
   view: "top",
   session: null,
+  history: {
+    chapter: "all",
+    status: "all",
+    sort: "id"
+  },
   storage: {
     questionsMissing: false,
     progressMissing: false
@@ -21,6 +26,7 @@ const views = {
   practice: document.querySelector("#practice-view"),
   summary: document.querySelector("#summary-view"),
   review: document.querySelector("#review-view"),
+  history: document.querySelector("#history-view"),
   data: document.querySelector("#data-view")
 };
 
@@ -101,7 +107,10 @@ function renderTop() {
   const exportedAt = formatExportDate(state.progress.lastExportedAt);
 
   top.innerHTML = `
-    <h1 id="top-title">PMP学習</h1>
+    <div class="top-header">
+      <h1 id="top-title">PMP学習</h1>
+      <button type="button" class="text-link" id="open-history">解答履歴</button>
+    </div>
     <div class="summary" aria-label="学習サマリー">
       <p class="summary-line">解答済 ${answered}/${allQuestions.length}問 ／ 全体正答率 ${percent(correct, allQuestions.length)}</p>
       <p class="${exportedAt ? "" : "export-status"}">最終エクスポート：${exportedAt || "未エクスポート"}</p>
@@ -115,6 +124,7 @@ function renderTop() {
     <div id="top-content"></div>`;
 
   top.querySelector("#open-data").addEventListener("click", () => setView("data"));
+  top.querySelector("#open-history").addEventListener("click", () => openHistory());
   top.querySelector("#review-weak").addEventListener("click", () => {
     startReview(allQuestions.filter((question) => state.progress.records[String(question.id)]?.lastResult === "incorrect"));
   });
@@ -180,7 +190,152 @@ function createChapterCard(chapter) {
       startReview(getSortedChapterQuestions(chapter).filter((question) => state.progress.records[String(question.id)]?.lastResult === "incorrect"));
     }, true, !hasIncorrect);
   }
+  addButton("履歴を見る", () => openHistory(chapter.chapterNumber), true);
   return card;
+}
+
+function openHistory(chapterNumber = null) {
+  state.history.chapter = chapterNumber === null ? "all" : String(chapterNumber);
+  state.history.status = "all";
+  state.history.sort = "id";
+  setView("history");
+}
+
+function getHistoryRows() {
+  if (!state.questions) return [];
+  return state.questions.chapters.flatMap((chapter) => (chapter.questions || []).map((question) => ({ chapter, question })));
+}
+
+function getHistoryRowStatus(question) {
+  const result = state.progress.records[String(question.id)]?.lastResult;
+  if (result === "correct") return "correct";
+  if (result === "incorrect") return "incorrect";
+  return "unanswered";
+}
+
+function renderHistory() {
+  const history = views.history;
+  if (!state.questions) {
+    history.innerHTML = `
+      <h1 id="history-title">解答履歴</h1>
+      <p class="notice">問題データを読み込むと解答履歴を表示できます。</p>
+      <button type="button" class="secondary" id="history-back">トップに戻る</button>`;
+    history.querySelector("#history-back").addEventListener("click", () => setView("top"));
+    return;
+  }
+
+  history.innerHTML = `
+    <div class="top-header">
+      <h1 id="history-title">解答履歴</h1>
+      <button type="button" class="text-link" id="history-back">トップに戻る</button>
+    </div>
+    <div class="history-filters">
+      <label>章
+        <select id="history-chapter"></select>
+      </label>
+      <label>ステータス
+        <select id="history-status">
+          <option value="all">すべて</option>
+          <option value="unanswered">未解答</option>
+          <option value="correct">直近正解</option>
+          <option value="incorrect">直近不正解</option>
+        </select>
+      </label>
+      <label>並び替え
+        <select id="history-sort">
+          <option value="id">問題番号順</option>
+          <option value="attempts-desc">解答回数が多い順</option>
+          <option value="attempts-asc">解答回数が少ない順</option>
+        </select>
+      </label>
+    </div>
+    <p class="history-count" id="history-count"></p>
+    <div class="history-table-wrap" aria-label="解答履歴マトリクス">
+      <table class="history-table"><thead></thead><tbody></tbody></table>
+    </div>`;
+
+  const chapterSelect = history.querySelector("#history-chapter");
+  chapterSelect.innerHTML = '<option value="all">すべての章</option>';
+  state.questions.chapters.forEach((chapter) => {
+    const option = document.createElement("option");
+    option.value = String(chapter.chapterNumber);
+    option.textContent = `第${chapter.chapterNumber}章 ${chapter.title}`;
+    chapterSelect.append(option);
+  });
+  chapterSelect.value = state.history.chapter;
+  history.querySelector("#history-status").value = state.history.status;
+  history.querySelector("#history-sort").value = state.history.sort;
+  history.querySelector("#history-back").addEventListener("click", () => setView("top"));
+  [chapterSelect, history.querySelector("#history-status"), history.querySelector("#history-sort")].forEach((select) => {
+    select.addEventListener("change", () => {
+      state.history.chapter = chapterSelect.value;
+      state.history.status = history.querySelector("#history-status").value;
+      state.history.sort = history.querySelector("#history-sort").value;
+      populateHistoryTable();
+    });
+  });
+  populateHistoryTable();
+}
+
+function populateHistoryTable() {
+  const history = views.history;
+  let rows = getHistoryRows().filter(({ chapter, question }) => {
+    const chapterMatches = state.history.chapter === "all" || String(chapter.chapterNumber) === state.history.chapter;
+    const statusMatches = state.history.status === "all" || getHistoryRowStatus(question) === state.history.status;
+    return chapterMatches && statusMatches;
+  });
+  rows.sort((first, second) => {
+    const firstAttempts = state.progress.records[String(first.question.id)]?.attempts || 0;
+    const secondAttempts = state.progress.records[String(second.question.id)]?.attempts || 0;
+    if (state.history.sort === "attempts-desc") return secondAttempts - firstAttempts || first.question.id - second.question.id;
+    if (state.history.sort === "attempts-asc") return firstAttempts - secondAttempts || first.question.id - second.question.id;
+    return first.question.id - second.question.id;
+  });
+  const maxAttempts = Math.max(1, ...rows.map(({ question }) => state.progress.records[String(question.id)]?.attempts || 0));
+  history.querySelector("#history-count").textContent = `該当 ${rows.length}問 / 全${getHistoryRows().length}問`;
+
+  const thead = history.querySelector(".history-table thead");
+  const tbody = history.querySelector(".history-table tbody");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+  const headerRow = document.createElement("tr");
+  const firstHeader = document.createElement("th");
+  firstHeader.className = "history-sticky-column";
+  firstHeader.scope = "col";
+  firstHeader.textContent = "問題";
+  headerRow.append(firstHeader);
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const header = document.createElement("th");
+    header.scope = "col";
+    header.textContent = `${attempt}回目`;
+    headerRow.append(header);
+  }
+  thead.append(headerRow);
+
+  rows.forEach(({ chapter, question }) => {
+    const row = document.createElement("tr");
+    const questionCell = document.createElement("th");
+    questionCell.className = "history-sticky-column";
+    questionCell.scope = "row";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "history-question";
+    button.textContent = `第${chapter.chapterNumber}章 問${question.id} ${question.text.slice(0, 15)}`;
+    button.addEventListener("click", () => startReview([question]));
+    questionCell.append(button);
+    row.append(questionCell);
+    const entries = state.progress.records[String(question.id)]?.history || [];
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const cell = document.createElement("td");
+      const result = entries[attempt];
+      if (result) {
+        cell.textContent = result.correct ? "○" : "✕";
+        cell.className = result.correct ? "history-correct" : "history-incorrect";
+      }
+      row.append(cell);
+    }
+    tbody.append(row);
+  });
 }
 
 function getSortedChapterQuestions(chapter) {
@@ -510,6 +665,7 @@ function refreshAfterProgressChange() {
   views.practice.innerHTML = "";
   views.summary.innerHTML = "";
   views.review.innerHTML = "";
+  views.history.innerHTML = "";
   Object.entries(views).forEach(([name, element]) => { element.hidden = name !== "top"; });
 }
 
@@ -568,6 +724,7 @@ function setView(viewName) {
   if (viewName === "top") renderTop();
   if (viewName === "practice") renderPractice();
   if (viewName === "summary") renderSummary();
+  if (viewName === "history") renderHistory();
   if (viewName === "data") renderData();
 }
 

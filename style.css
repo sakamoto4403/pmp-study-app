@@ -21,6 +21,7 @@ button, input { font: inherit; }
 
 .view { display: grid; gap: 16px; }
 .view[hidden] { display: none; }
+.top-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 h1, h2, p { margin: 0; }
 h1 { font-size: 1.6rem; }
@@ -94,6 +95,23 @@ button:focus-visible, .file-button:focus-within { outline: 3px solid #f1b840; ou
 .accordion-question, .accordion-explanation { padding: 0 16px 16px; line-height: 1.7; }
 .accordion-question { font-weight: 700; }
 .accordion-explanation { color: #445066; }
+
+.history-filters { display: grid; gap: 12px; }
+.history-filters label { display: grid; gap: 4px; font-weight: 700; }
+.history-filters select { min-height: 48px; border: 1px solid #1e4f8a; border-radius: 8px; padding: 8px; background: #fff; }
+.history-count { color: #445066; font-weight: 700; }
+.history-table-wrap { overflow-x: auto; border: 1px solid #d7e0ee; border-radius: 12px; background: #fff; -webkit-overflow-scrolling: touch; }
+.history-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
+.history-table th, .history-table td { min-width: 64px; height: 40px; border-right: 1px solid #d7e0ee; border-bottom: 1px solid #d7e0ee; padding: 6px; text-align: center; }
+.history-table thead th { background: #edf3fa; font-size: .875rem; }
+.history-table tr:last-child th, .history-table tr:last-child td { border-bottom: 0; }
+.history-table th:last-child, .history-table td:last-child { border-right: 0; }
+.history-sticky-column { position: sticky; left: 0; z-index: 1; min-width: 190px !important; max-width: 190px; padding: 0 !important; background: #fff; text-align: left !important; box-shadow: 2px 0 4px rgba(23, 32, 51, .12); }
+.history-table thead .history-sticky-column { z-index: 2; padding: 6px !important; background: #edf3fa; }
+.history-question { min-height: 40px; border: 0; border-radius: 0; padding: 6px 8px; color: #172033; background: #fff; font-size: .875rem; font-weight: 400; justify-content: flex-start; line-height: 1.35; text-align: left; white-space: normal; }
+.history-question:focus-visible { outline: 3px solid #f1b840; outline-offset: -3px; }
+.history-correct { color: #176237; font-weight: 800; }
+.history-incorrect { color: #a71930; font-weight: 800; }
 
 @media (min-width: 560px) {
   .actions { grid-template-columns: 1fr 1fr; }
